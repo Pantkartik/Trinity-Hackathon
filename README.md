@@ -1,12 +1,6 @@
-# 🧼 The IoT Hygiene Ecosystem  
-### Transforming Public Sanitation through Real-Time Monitoring & Digital Trust 
-
---- 
-=======
-# Smart Toilet Hygiene Monitoring System ( CleanFind AI)
+# 🧼 The AI-IoT Hygiene Monitoring System ( CleanFind AI)
 
 ## 🏆 Complete AI- IoT-Enabled Public Toilet Management Solution
-
 
 ## 🚀 Hackathon Project Overview 
 
@@ -152,6 +146,16 @@ We conducted a **10-point questionnaire** to identify real user pain points:
 - Predictive maintenance alerts 
 
 --- 
+## Images 
+
+---![circuit_2](https://github.com/user-attachments/assets/3ebe0750-8fee-48e1-b806-4d05c25faa80)
+![circuit_1](https://github.com/user-attachments/assets/dbb47e46-4fa0-4454-a762-98846cdd59a7)
+![gas_graph](https://github.com/user-attachments/assets/6dfb0622-7819-471a-bab9-fd66bdccfd88)
+![humidity](https://github.com/user-attachments/assets/85886fb6-49dc-4d38-a85f-74abf1ac69ab)
+<img width="2200" height="1765" alt="confusion_matrix" src="https://github.com/user-attachments/assets/eaf4403c-6cb6-4f78-b354-14e577e385a9" />
+<img width="2969" height="1765" alt="feature_importance" src="https://github.com/user-attachments/assets/0365eb34-edc6-4b03-84d6-baf66983cefa" />
+
+
 
 ## 🏁 Conclusion 
 
