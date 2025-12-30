@@ -157,6 +157,8 @@ We conducted a **10-point survey** to identify what users fears of :
 <img width="1896" height="918" alt="image" src="https://github.com/user-attachments/assets/cdb98932-314b-45f0-b743-811eb5c14ad0" />
 <img width="1888" height="914" alt="image" src="https://github.com/user-attachments/assets/17c72425-dd77-4d74-90b9-ac930ae4d86e" />
 
+<center/><h1/>Video Demo - https://youtu.be/hI-imvyMICo
+
 ## Data flow of the Architecture.
 
 <p align="center">
