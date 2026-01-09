@@ -6,8 +6,10 @@
 
 **The ioT Hygiene Ecosystem** is the one of the smartest method which build up the **public trusts in toilets** using **IoT sensors, real-time hygiene scoring, and automated sanitation actions  we can detect the overall severity with helps public to trust the Public toilets**.  
 
-The project targets **urban, rural, and the private and public toilets** under India's **Swach Bharat Mission (SBM)** which was introduced by our country Prime Minister, Narendra Modi . 
+The project targets **urban, rural, and the private and public toilets** under India's **Swach Bharat Mission (SBM)** which was introduced by our country Prime Minister, Narendra Modi .
 
+## Important Update(Hardware Code).
+The code insure that the sensors are properly connected to the module and providing us the data as required by the AI model to be trained and reply with the proper information.
 
 **Theme:** Smart Cities | IoT | AI | Public Health | Digital India 
 =======
