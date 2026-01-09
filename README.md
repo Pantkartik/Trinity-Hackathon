@@ -10,6 +10,8 @@ The project targets **urban, rural, and the private and public toilets** under I
 
 ## Important Update(Hardware Code).
 The code insure that the sensors are properly connected to the module and providing us the data as required by the AI model to be trained and reply with the proper information.
+## Important Update(Hardware Code 2.0).
+The code insure that the nodes will be connected to the other nodes if wifi range is not applicable there . if there is certain problem with he wifi the nodes automatically chnages the wifi path like an network topology.
 
 **Theme:** Smart Cities | IoT | AI | Public Health | Digital India 
 =======
