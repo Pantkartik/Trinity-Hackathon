@@ -1,0 +1,117 @@
+#include <DHT.h>
+
+#define LDR_PIN 34
+#define GAS_PIN 35
+#define RELAY 2
+#define TRIG_PIN 5
+#define ECHO_PIN 18
+
+#define DHTPIN 27
+#define DHTTYPE DHT22
+
+#define PH_PIN 14
+#define TURB_PIN 12
+
+DHT dht(DHTPIN, DHTTYPE);
+
+const int LDR_THRESHOLD = 2000;
+const int GAS_SEVERE = 2000;
+const float SOAP_MAX_HEIGHT = 7.0;
+
+bool occupied = false;
+bool doorAlreadyDetected = false;
+
+void setup() {
+  pinMode(RELAY, OUTPUT);
+  digitalWrite(RELAY, HIGH);
+
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  Serial.begin(115200);
+  dht.begin();
+
+  Serial.println("Smart Washroom System (Gas + LDR + Soap + Humidity + pH + Turbidity)");
+  Serial.println("--------------------------------------------------------------");
+}
+
+void loop() {
+
+  int ldrValue = analogRead(LDR_PIN);
+
+  if (ldrValue > LDR_THRESHOLD && !doorAlreadyDetected) {
+    doorAlreadyDetected = true;
+    occupied = !occupied;
+    Serial.println(occupied ? "STATUS: OCCUPIED" : "STATUS: FREE");
+  }
+  if (ldrValue < LDR_THRESHOLD - 300) {
+    doorAlreadyDetected = false;
+  }
+
+  int gasValue = analogRead(GAS_PIN);
+  Serial.print("GAS: ");
+  Serial.print(gasValue);
+  Serial.print(" | ");
+
+  if (gasValue < GAS_SEVERE) {
+    Serial.print("NORMAL | ");
+    digitalWrite(RELAY, LOW);
+  } else {
+    Serial.print("SEVERE | ");
+    digitalWrite(RELAY, HIGH);
+  }
+
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  long duration = pulseIn(ECHO_PIN, HIGH, 30000);
+
+  if (duration > 0) {
+    float distance = (duration * 0.0343) / 2;
+    float soapHeight = constrain(SOAP_MAX_HEIGHT - distance, 0, SOAP_MAX_HEIGHT);
+    int soapPercent = (soapHeight / SOAP_MAX_HEIGHT) * 100;
+
+    Serial.print("SOAP: ");
+    Serial.print(soapPercent);
+    Serial.print("% | ");
+  } else {
+    Serial.print("SOAP: ERROR | ");
+  }
+
+  float hum = dht.readHumidity();
+  float temp = dht.readTemperature();
+
+  if (!isnan(hum) && !isnan(temp)) {
+    Serial.print("HUM: ");
+    Serial.print(hum);
+    Serial.print("% | TEMP: ");
+    Serial.print(temp);
+    Serial.print("°C | ");
+  } else {
+    Serial.print("DHT: ERROR | ");
+  }
+
+  int phRaw = analogRead(PH_PIN);
+  float pH = (phRaw / 4095.0) * 14.0;
+
+  Serial.print("pH: ");
+  Serial.print(pH, 2);
+  Serial.print(" | ");
+
+  int turbRaw = analogRead(TURB_PIN);
+
+  Serial.print("TURB: ");
+  Serial.print(turbRaw);
+
+  if (turbRaw > 2500) {
+    Serial.println(" (DIRTY)");
+  } else {
+    Serial.println(" (CLEAN)");
+  }
+
+  Serial.println("--------------------------------------------------------------");
+  delay(2000);
+}
