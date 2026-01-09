@@ -8,6 +8,8 @@
 
 The project targets **urban, rural, and the private and public toilets** under India's **Swach Bharat Mission (SBM)** which was introduced by our country Prime Minister, Narendra Modi . 
 
+## Important Update(Hardware Code 2.0).
+The code insure that the nodes will be connected to the other nodes if wifi range is not applicable there . if there is certain problem with he wifi the nodes automatically chnages the wifi path like an network topology.
 
 **Theme:** Smart Cities | IoT | AI | Public Health | Digital India 
 =======
