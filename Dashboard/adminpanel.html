@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - PublicEase</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .leaflet-control-attribution { display: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-100 h-screen w-screen overflow-hidden flex font-sans text-slate-800">
+
+    <div id="toast" class="fixed top-6 right-6 z-[9999] transform translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="bg-white border-l-4 border-blue-500 shadow-2xl rounded-lg p-4 flex items-center gap-3 w-80">
+            <div id="toast-icon" class="bg-blue-100 p-2 rounded-full text-blue-600"><i data-lucide="info" class="w-5 h-5"></i></div>
+            <div>
+                <h4 id="toast-title" class="font-bold text-sm text-slate-800">Notification</h4>
+                <p id="toast-msg" class="text-xs text-slate-500 mt-0.5">Message goes here...</p>
+            </div>
+        </div>
+    </div>
+
+    <aside class="hidden md:flex w-64 bg-slate-900 flex-col py-8 z-50">
+        <div class="px-8 mb-10 flex items-center gap-3">
+            <div class="bg-blue-600 p-2 rounded-lg">
+                <i data-lucide="shield-check" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-white font-bold text-lg leading-tight">Admin<span class="text-blue-500">Panel</span></h1>
+                <p class="text-slate-500 text-xs">Manager View</p>
+            </div>
+        </div>
+        
+        <nav class="flex-1 flex flex-col gap-2 px-4 w-full">
+            <button onclick="switchTab('add-toilet')" id="nav-add" class="flex items-center gap-3 text-white bg-white/10 px-4 py-3 rounded-xl transition hover:bg-white/20">
+                <i data-lucide="map-pin" class="w-5 h-5"></i> <span class="font-medium text-sm">Add New</span>
+            </button>
+            <button onclick="switchTab('manage-toilets')" id="nav-list" class="flex items-center gap-3 text-slate-400 px-4 py-3 rounded-xl transition hover:text-white hover:bg-white/5">
+                <i data-lucide="list" class="w-5 h-5"></i> <span class="font-medium text-sm">Manage Facilities</span>
+            </button>
+            <button onclick="switchTab('manage-bookings')" id="nav-bookings" class="flex items-center gap-3 text-slate-400 px-4 py-3 rounded-xl transition hover:text-white hover:bg-white/5">
+                <i data-lucide="calendar-check" class="w-5 h-5"></i> <span class="font-medium text-sm">Bookings</span>
+                <span id="booking-count" class="ml-auto bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
+            </button>
+        </nav>
+
+        <div class="px-4 mt-auto">
+            <button onclick="window.location.href='index.html'" class="flex items-center gap-3 text-slate-500 px-4 py-3 rounded-xl transition hover:text-red-400 hover:bg-red-400/10 w-full">
+                <i data-lucide="log-out" class="w-5 h-5"></i> <span class="font-medium text-sm">Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 relative h-full overflow-y-auto bg-slate-50 p-8">
+        
+        <div id="view-add-toilet" class="max-w-4xl mx-auto fade-in">
+            <div class="flex justify-between items-end mb-8">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900">Add New Facility</h2>
+                    <p class="text-slate-500 mt-2">Click map to set location.</p>
+                </div>
+                <button onclick="submitToilet()" class="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-800 transition flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i> Generate ID & Publish
+                </button>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-5">
+                    <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Name</label><input type="text" id="t-name" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Status</label><select id="t-status" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200"><option value="clean">Clean</option><option value="warning">Warning</option></select></div>
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Score</label><input type="number" id="t-severity" value="9.0" step="0.1" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200"></div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Amenities</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex items-center gap-2"><input type="checkbox" class="w-4 h-4 text-blue-600" value="Free" checked> <span class="text-sm">Free Entry</span></label>
+                            <label class="flex items-center gap-2"><input type="checkbox" class="w-4 h-4 text-blue-600" value="Wheelchair"> <span class="text-sm">Wheelchair</span></label>
+                            <label class="flex items-center gap-2"><input type="checkbox" class="w-4 h-4 text-blue-600" value="Baby Care"> <span class="text-sm">Baby Care</span></label>
+                            <label class="flex items-center gap-2"><input type="checkbox" class="w-4 h-4 text-blue-600" value="Water"> <span class="text-sm">Water</span></label>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" id="t-lat" placeholder="Lat" readonly class="w-full px-4 py-2 bg-slate-100 rounded-lg text-xs">
+                        <input type="text" id="t-lng" placeholder="Lng" readonly class="w-full px-4 py-2 bg-slate-100 rounded-lg text-xs">
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                        <p class="text-xs text-blue-700 font-bold mb-1">Note:</p>
+                        <p class="text-xs text-blue-600">After publishing, copy the <strong>ID</strong> from the list below for your ESP32.</p>
+                    </div>
+                </div>
+                <div class="h-[500px] bg-white p-2 rounded-3xl shadow-sm border border-slate-100 relative">
+                    <div id="picker-map" class="w-full h-full rounded-2xl z-0"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-manage-toilets" class="max-w-5xl mx-auto hidden fade-in">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-900">Manage Facilities</h2>
+                <p class="text-slate-500 mt-2">View real-time hygiene scores and status.</p>
+            </div>
+            <div id="toilets-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+        </div>
+
+        <div id="view-manage-bookings" class="max-w-5xl mx-auto hidden fade-in">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-900">Manage Bookings</h2>
+                <p class="text-slate-500 mt-2">Approve or reject user requests.</p>
+            </div>
+            <div class="space-y-4" id="bookings-list"></div>
+        </div>
+
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // FIREBASE CONFIG
+        const firebaseConfig = {
+          apiKey: "AIzaSyBLHApLSCSh83yidsLXxg54qLZvqns3JSM",
+          authDomain: "fir-629b8.firebaseapp.com",
+          projectId: "fir-629b8",
+          storageBucket: "fir-629b8.firebasestorage.app",
+          messagingSenderId: "672529740834",
+          appId: "1:672529740834:web:18f4721a0d4e952a50c67b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        lucide.createIcons();
+
+        // --- TABS LOGIC ---
+        window.switchTab = (tabId) => {
+            ['add-toilet', 'manage-toilets', 'manage-bookings'].forEach(id => {
+                const view = document.getElementById('view-' + id);
+                if(view) view.classList.add('hidden');
+                
+                const btn = document.querySelector(`button[onclick="switchTab('${id}')"]`);
+                if(btn) {
+                    btn.classList.replace('text-white', 'text-slate-400');
+                    btn.classList.replace('bg-white/10', 'hover:bg-white/5');
+                }
+            });
+
+            document.getElementById('view-' + tabId).classList.remove('hidden');
+            
+            const activeBtn = document.querySelector(`button[onclick="switchTab('${tabId}')"]`);
+            if(activeBtn) {
+                activeBtn.classList.replace('text-slate-400', 'text-white');
+                activeBtn.classList.remove('hover:bg-white/5');
+                activeBtn.classList.add('bg-white/10');
+            }
+
+            if(tabId === 'add-toilet') setTimeout(() => pickerMap.invalidateSize(), 100);
+        }
+
+        // --- MAP LOGIC ---
+        const pickerMap = L.map('picker-map').setView([28.6315, 77.2167], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(pickerMap);
+        let tempMarker = null;
+        pickerMap.on('click', (e) => {
+            const { lat, lng } = e.latlng;
+            document.getElementById('t-lat').value = lat.toFixed(6);
+            document.getElementById('t-lng').value = lng.toFixed(6);
+            if(tempMarker) tempMarker.setLatLng([lat, lng]);
+            else tempMarker = L.marker([lat, lng]).addTo(pickerMap);
+        });
+
+        // --- ADD TOILET ---
+        window.submitToilet = async () => {
+            const name = document.getElementById('t-name').value;
+            const status = document.getElementById('t-status').value;
+            const severity = document.getElementById('t-severity').value;
+            const lat = parseFloat(document.getElementById('t-lat').value);
+            const lng = parseFloat(document.getElementById('t-lng').value);
+            
+            // Collect features
+            const features = [];
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => features.push(cb.value));
+
+            if(!name || !lat) return showToast("Error", "Pick location & name", "error");
+
+            try {
+                const docRef = await addDoc(collection(db, "toilets"), { 
+                    name, status, severity, lat, lng, features, 
+                    reviews: 0,
+                    waterLevel: 100, // Default values
+                    soapLevel: 100,
+                    gasLevel: 0
+                });
+                
+                // Show prompt to copy ID
+                prompt("Facility Added! Copy this ID for ESP32:", docRef.id);
+                showToast("Success", "Toilet Added!", "success");
+                
+                document.getElementById('t-name').value = "";
+                if(tempMarker) tempMarker.remove();
+            } catch(e) { showToast("Error", e.message, "error"); }
+        }
+
+        // --- MANAGE TOILETS (UPDATED LIST) ---
+        const toiletsList = document.getElementById('toilets-list');
+        onSnapshot(collection(db, "toilets"), (snapshot) => {
+            toiletsList.innerHTML = '';
+            snapshot.docs.forEach(doc => {
+                const t = doc.data();
+                
+                // Score Calculation for Color
+                const score = parseFloat(t.severity || 0);
+                let scoreColor = 'text-red-700 bg-red-50 border-red-100'; // Bad
+                
+                if (score >= 7) {
+                    scoreColor = 'text-green-700 bg-green-50 border-green-100'; // Good
+                } else if (score >= 4) {
+                    scoreColor = 'text-orange-700 bg-orange-50 border-orange-100'; // Moderate
+                }
+
+                const div = document.createElement('div');
+                div.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative group transition hover:shadow-md";
+                div.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900">${t.name}</h3>
+                            <p class="text-[10px] text-slate-400 font-mono mt-1 select-all cursor-pointer bg-slate-50 px-1 rounded inline-block" title="Click to copy ID">ID: ${doc.id}</p>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-1 rounded bg-slate-100 text-slate-600 uppercase tracking-wide">${t.status}</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="flex-1 px-3 py-2 rounded-xl border ${scoreColor} flex justify-between items-center">
+                            <span class="text-xs font-bold">Hygiene Score</span>
+                            <span class="text-sm font-extrabold">${score}/10</span>
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-slate-400 mb-4 flex gap-3">
+                        <span>💧 Water: ${t.waterLevel || 0}%</span>
+                        <span>🧼 Soap: ${t.soapLevel || 0}%</span>
+                    </div>
+
+                    <button onclick="deleteToilet('${doc.id}')" class="w-full py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition flex items-center justify-center gap-2">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i> Remove Facility
+                    </button>
+                `;
+                toiletsList.appendChild(div);
+            });
+            lucide.createIcons();
+        });
+
+        window.deleteToilet = async (id) => {
+            if(confirm("Are you sure you want to delete this facility? This cannot be undone.")) {
+                await deleteDoc(doc(db, "toilets", id));
+                showToast("Deleted", "Facility removed.", "success");
+            }
+        }
+
+        // --- BOOKINGS ---
+        const bookingsList = document.getElementById('bookings-list');
+        const bookingCount = document.getElementById('booking-count');
+        
+        onSnapshot(query(collection(db, "bookings"), orderBy("bookingDate", "desc")), (snapshot) => {
+            const bookings = [];
+            snapshot.docs.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
+            bookingCount.innerText = bookings.filter(b => b.status === 'confirmed').length;
+            bookingsList.innerHTML = '';
+            
+            bookings.forEach(booking => {
+                let statusColor = "bg-yellow-100 text-yellow-700";
+                if(booking.status === 'approved') statusColor = "bg-green-100 text-green-700";
+                if(booking.status === 'rejected') statusColor = "bg-red-100 text-red-700";
+
+                const div = document.createElement('div');
+                div.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center";
+                div.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold">${booking.userName ? booking.userName.charAt(0) : "U"}</div>
+                        <div>
+                            <h4 class="font-bold text-slate-900">${booking.toiletName}</h4>
+                            <p class="text-sm text-slate-500">${booking.userName} • ${booking.timeSlot}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="px-3 py-1 rounded text-xs font-bold uppercase ${statusColor}">${booking.status}</span>
+                        ${booking.status === 'confirmed' ? `
+                        <div class="flex gap-2">
+                            <button onclick="updateStatus('${booking.id}', 'approved')" class="p-2 rounded bg-green-50 text-green-600 hover:bg-green-100"><i data-lucide="check" class="w-4 h-4"></i></button>
+                            <button onclick="updateStatus('${booking.id}', 'rejected')" class="p-2 rounded bg-red-50 text-red-600 hover:bg-red-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>` : ''}
+                    </div>
+                `;
+                bookingsList.appendChild(div);
+            });
+            lucide.createIcons();
+        });
+
+        window.updateStatus = async (id, status) => {
+            await updateDoc(doc(db, "bookings", id), { status });
+            showToast("Updated", `Booking ${status}`, "success");
+        }
+
+        window.showToast = (title, message, type='success') => {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-msg').innerText = message;
+            const border = toast.querySelector('div');
+            border.className = `bg-white border-l-4 shadow-2xl rounded-lg p-4 flex items-center gap-3 w-80 ${type === 'error' ? 'border-red-500' : 'border-blue-500'}`;
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => toast.classList.add('translate-x-full'), 3000);
+        }
+    </script>
+</body>
+</html>

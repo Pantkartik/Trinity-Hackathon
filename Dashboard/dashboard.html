@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PublicEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .drawer-enter { transform: translateX(100%); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.2s ease-out; }
+    </style>
+</head>
+<body class="bg-slate-100 h-screen w-screen overflow-hidden flex font-sans text-slate-800">
+
+    <div id="toast" class="fixed top-6 right-6 z-[9999] transform translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="bg-white border-l-4 border-blue-500 shadow-2xl rounded-lg p-4 flex items-center gap-3 w-80">
+            <div id="toast-icon" class="bg-blue-100 p-2 rounded-full text-blue-600"><i data-lucide="info" class="w-5 h-5"></i></div>
+            <div>
+                <h4 id="toast-title" class="font-bold text-sm text-slate-800">Notification</h4>
+                <p id="toast-msg" class="text-xs text-slate-500 mt-0.5">Message goes here...</p>
+            </div>
+            <button onclick="hideToast()" class="ml-auto text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+    </div>
+
+    <aside class="hidden md:flex w-64 bg-slate-900 flex-col py-6 z-50 shadow-2xl">
+        <div class="px-6 mb-8 flex items-center gap-3 cursor-pointer" onclick="location.reload()">
+            <div class="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-500/20"><i data-lucide="map-pin" class="text-white w-5 h-5"></i></div>
+            <span class="text-xl font-bold text-white tracking-tight">PublicEase</span>
+        </div>
+        <nav class="flex-1 px-4 space-y-2">
+            <button class="w-full flex items-center gap-3 text-white bg-white/10 px-4 py-3 rounded-xl transition border border-white/5 shadow-inner">
+                <i data-lucide="map" class="w-5 h-5 text-blue-400"></i> <span class="font-medium text-sm">Live Map</span>
+            </button>
+        </nav>
+        <div class="px-4 mt-auto">
+            <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-3 flex items-center gap-3 border border-white/10">
+                <img id="sidebar-user-img" src="https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff" class="w-10 h-10 rounded-full object-cover border-2 border-slate-600">
+                <div class="flex-1 min-w-0"><p id="sidebar-user-name" class="text-white text-xs font-bold truncate">User</p></div>
+                <button onclick="logout()" class="p-2 rounded-lg text-slate-400 hover:text-red-400 transition"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 relative h-full">
+        <div class="absolute top-6 left-6 right-6 md:left-8 md:w-96 z-[400]">
+            <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl p-3 flex items-center gap-3 border border-white/50">
+                <i data-lucide="search" class="w-5 h-5 text-slate-400 ml-2"></i>
+                <input type="text" placeholder="Search nearby..." class="w-full bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-400">
+            </div>
+        </div>
+
+        <div id="map" class="w-full h-full z-0"></div>
+
+        <div id="drawer" class="absolute top-4 bottom-4 right-4 w-full md:w-[480px] bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl z-[500] transform translate-x-[120%] transition-transform duration-500 ease-out flex flex-col overflow-hidden border border-white/50">
+            
+            <div class="relative h-48 bg-slate-900 shrink-0 group">
+                <img src="https://images.unsplash.com/photo-1584622050111-993a426fbf0a?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-60">
+                <div class="absolute bottom-4 left-6 right-6">
+                    <h2 id="d-title" class="text-2xl font-bold text-white tracking-tight">Public Toilet</h2>
+                    <p class="text-white/80 text-sm mt-1 flex items-center gap-2"><span id="d-status-badge" class="bg-green-500 text-white px-2 py-0.5 rounded text-xs font-bold">CLEAN</span></p>
+                </div>
+                <button onclick="closeDrawer()" class="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="p-6 overflow-y-auto no-scrollbar flex-1 space-y-6">
+                
+                <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Live Hygiene Score</div>
+                        <div id="d-severity-text" class="text-lg font-bold text-green-600">Excellent</div>
+                    </div>
+                    <div class="relative w-16 h-16 flex items-center justify-center">
+                        <span id="d-score" class="text-xl font-bold text-slate-800">9.0</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-slate-900 mb-3 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-blue-500"></i> Live Supplies</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1"><span>Water Level</span><span id="d-water-val">80%</span></div>
+                            <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden"><div id="d-water-bar" class="h-full bg-blue-500 w-[80%]"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1"><span>Soap Level</span><span id="d-soap-val">60%</span></div>
+                            <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden"><div id="d-soap-bar" class="h-full bg-purple-500 w-[60%]"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1"><span>Air Quality (PPM)</span><span id="d-gas-val">45</span></div>
+                            <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden"><div id="d-gas-bar" class="h-full bg-green-500 w-[10%]"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-bold text-slate-900 mb-3">Book a Slot</h3>
+                    <div id="time-slots-container" class="grid grid-cols-3 gap-2"></div>
+                </div>
+            </div>
+
+            <div class="p-6 bg-white border-t border-slate-100">
+                <button id="btn-confirm-booking" onclick="confirmBooking()" disabled class="w-full bg-slate-200 text-slate-400 py-4 rounded-2xl font-bold text-lg transition-all duration-200 cursor-not-allowed">Select Time First</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyBLHApLSCSh83yidsLXxg54qLZvqns3JSM",
+          authDomain: "fir-629b8.firebaseapp.com",
+          projectId: "fir-629b8",
+          storageBucket: "fir-629b8.firebasestorage.app",
+          messagingSenderId: "672529740834",
+          appId: "1:672529740834:web:18f4721a0d4e952a50c67b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        lucide.createIcons();
+
+        const map = L.map('map', { zoomControl: false }).setView([28.6315, 77.2167], 15);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 20 }).addTo(map);
+
+        let currentUser = null;
+        let selectedSlotTime = null;
+        let currentToiletData = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('sidebar-user-name').innerText = user.displayName || "User";
+                if(user.photoURL) document.getElementById('sidebar-user-img').src = user.photoURL;
+                document.getElementById('header-greeting').innerText = `Hello, ${user.displayName.split(' ')[0]} 👋`;
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        // LIVE TOILET PINS
+        onSnapshot(collection(db, "toilets"), (snapshot) => {
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                createMarker(data);
+                // If drawer is open for this toilet, update it live
+                if(currentToiletData && currentToiletData.name === data.name) openDrawer(data);
+            });
+        });
+
+        function createMarker(data) {
+            if(!data.lat) return;
+            const score = parseFloat(data.severity || 0);
+            let color = score >= 7 ? 'bg-green-500' : (score >= 4 ? 'bg-orange-500' : 'bg-red-500');
+            
+            const icon = L.divIcon({
+                className: 'custom-pin',
+                html: `<div class="w-8 h-8 rounded-full border-2 border-white shadow-lg ${color}"></div>`
+            });
+            const marker = L.marker([data.lat, data.lng], {icon}).addTo(map);
+            marker.on('click', () => { 
+                map.flyTo([data.lat, data.lng], 16); 
+                openDrawer(data); 
+            });
+        }
+
+        const drawer = document.getElementById('drawer');
+        
+        window.openDrawer = (data) => {
+            currentToiletData = data; // Store for live updates
+            document.getElementById('d-title').innerText = data.name;
+            
+            const score = parseFloat(data.severity || 10.0).toFixed(1);
+            document.getElementById('d-score').innerText = score;
+
+            // UPDATE STATUS & COLOR
+            const badge = document.getElementById('d-status-badge');
+            const sevText = document.getElementById('d-severity-text');
+            
+            if(score >= 7) {
+                badge.className = "bg-green-500 text-white px-2 py-0.5 rounded text-xs font-bold"; badge.innerText = "CLEAN";
+                sevText.innerText = "Excellent"; sevText.className = "text-lg font-bold text-green-600";
+            } else if (score >= 4) {
+                badge.className = "bg-orange-500 text-white px-2 py-0.5 rounded text-xs font-bold"; badge.innerText = "MODERATE";
+                sevText.innerText = "Moderate"; sevText.className = "text-lg font-bold text-orange-600";
+            } else {
+                badge.className = "bg-red-500 text-white px-2 py-0.5 rounded text-xs font-bold"; badge.innerText = "DIRTY";
+                sevText.innerText = "Poor Condition"; sevText.className = "text-lg font-bold text-red-600";
+            }
+
+            // LIVE SENSOR BARS
+            const water = data.waterLevel || 0;
+            const soap = data.soapLevel || 0;
+            const gas = data.gasLevel || 0;
+
+            document.getElementById('d-water-val').innerText = water + "%";
+            document.getElementById('d-water-bar').style.width = water + "%";
+            document.getElementById('d-water-bar').className = `h-full ${water < 30 ? 'bg-red-500' : 'bg-blue-500'}`;
+
+            document.getElementById('d-soap-val').innerText = soap + "%";
+            document.getElementById('d-soap-bar').style.width = soap + "%";
+            document.getElementById('d-soap-bar').className = `h-full ${soap < 15 ? 'bg-red-500' : 'bg-purple-500'}`;
+
+            document.getElementById('d-gas-val').innerText = gas;
+            document.getElementById('d-gas-bar').style.width = Math.min((gas/500)*100, 100) + "%";
+            document.getElementById('d-gas-bar').className = `h-full ${gas > 200 ? 'bg-red-500' : 'bg-green-500'}`;
+
+            generateTimeSlots();
+            drawer.classList.remove('translate-x-[120%]');
+        }
+
+        window.closeDrawer = () => { drawer.classList.add('translate-x-[120%]'); currentToiletData = null; }
+
+        function generateTimeSlots() {
+            const container = document.getElementById('time-slots-container');
+            container.innerHTML = '';
+            let now = new Date();
+            let min = Math.ceil(now.getMinutes()/15)*15; now.setMinutes(min);
+            for(let i=0; i<6; i++) {
+                let time = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                let btn = document.createElement('button');
+                btn.className = "py-2 px-3 rounded-xl border border-slate-200 text-sm font-medium hover:border-blue-500 transition";
+                btn.innerText = time;
+                btn.onclick = () => {
+                    Array.from(container.children).forEach(b=>b.className="py-2 px-3 rounded-xl border border-slate-200 text-sm font-medium hover:border-blue-500 transition");
+                    btn.className = "py-2 px-3 rounded-xl bg-blue-600 text-white text-sm font-bold shadow-md";
+                    selectedSlotTime = time;
+                    document.getElementById('btn-confirm-booking').disabled = false;
+                    document.getElementById('btn-confirm-booking').className = "w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-lg hover:bg-slate-800 shadow-xl";
+                    document.getElementById('btn-confirm-booking').innerText = "Confirm Booking";
+                };
+                container.appendChild(btn);
+                now.setMinutes(now.getMinutes()+15);
+            }
+        }
+
+        window.confirmBooking = async () => {
+            if(!selectedSlotTime) return;
+            const btn = document.getElementById('btn-confirm-booking');
+            btn.innerText = "Booking...";
+            try {
+                await addDoc(collection(db, "bookings"), {
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName,
+                    toiletName: currentToiletData.name,
+                    timeSlot: selectedSlotTime,
+                    bookingDate: new Date(),
+                    status: "confirmed"
+                });
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                btn.innerText = "Booked!";
+                btn.className = "w-full bg-green-600 text-white py-4 rounded-2xl font-bold text-lg shadow-xl";
+                window.showToast("Success", "Booking confirmed!");
+                setTimeout(() => closeDrawer(), 2000);
+            } catch(e) { console.error(e); }
+        }
+
+        window.showToast = (title, msg) => {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-msg').innerText = msg;
+            t.classList.remove('translate-x-full');
+            setTimeout(() => t.classList.add('translate-x-full'), 3000);
+        }
+        window.hideToast = () => document.getElementById('toast').classList.add('translate-x-full');
+        window.logout = async () => { await signOut(auth); window.location.href = "login.html"; }
+    </script>
+</body>
+</html>

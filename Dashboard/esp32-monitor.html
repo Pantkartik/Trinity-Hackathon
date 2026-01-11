@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Sensor Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap'); .font-mono { font-family: 'JetBrains Mono', monospace; } .transition-width { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen w-screen overflow-hidden font-sans flex flex-col">
+
+    <header class="bg-slate-800 border-b border-slate-700 p-6 flex justify-between items-center shadow-lg z-10">
+        <div class="flex items-center gap-4">
+            <div class="bg-blue-600 p-2 rounded-lg animate-pulse"><i data-lucide="cpu" class="w-6 h-6 text-white"></i></div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wider text-white">ESP32 <span class="text-blue-400">Simulator</span></h1>
+                <div class="flex items-center gap-2 text-xs text-slate-400 font-mono">
+                    <span id="conn-status" class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span id="conn-text">DISCONNECTED</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex gap-2">
+            <input type="text" id="target-id" placeholder="Paste Toilet ID Here" class="bg-slate-900 border border-slate-600 text-white px-3 py-2 rounded-lg text-xs w-64 focus:border-blue-500 outline-none font-mono">
+            <button onclick="connectESP()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition">CONNECT</button>
+        </div>
+    </header>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="bg-slate-800 rounded-3xl p-6 border border-slate-700 shadow-xl relative overflow-hidden group">
+                <div class="flex justify-between items-start mb-6">
+                    <div><h2 class="text-slate-400 text-sm font-bold uppercase">Air Quality</h2></div>
+                    <div id="gas-badge" class="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500/30">FRESH</div>
+                </div>
+                <div class="flex items-end gap-2 mb-2"><span id="gas-val-display" class="text-5xl font-mono font-bold text-white">45</span><span class="text-slate-500 font-bold mb-2">PPM</span></div>
+                <div class="h-4 w-full bg-slate-700 rounded-full overflow-hidden"><div id="gas-bar" class="h-full bg-green-500 transition-width w-[10%]"></div></div>
+            </div>
+
+            <div class="bg-slate-800 rounded-3xl p-6 border border-slate-700 shadow-xl relative overflow-hidden group">
+                <div class="flex justify-between items-start mb-6">
+                    <div><h2 class="text-slate-400 text-sm font-bold uppercase">Water Level</h2></div>
+                    <div id="water-badge" class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-xs font-bold border border-blue-500/30">FULL</div>
+                </div>
+                <div class="flex gap-6 items-center">
+                    <div class="h-24 w-12 bg-slate-700 rounded-lg border-2 border-slate-600 relative overflow-hidden flex items-end">
+                        <div id="water-visual" class="w-full bg-blue-500 opacity-80 transition-all duration-500 h-[80%]"></div>
+                    </div>
+                    <div><span id="water-val-display" class="text-5xl font-mono font-bold text-white">80</span><span class="text-xl text-slate-500 font-bold">%</span></div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 rounded-3xl p-6 border border-slate-700 shadow-xl relative overflow-hidden group">
+                <div class="flex justify-between items-start mb-6">
+                    <div><h2 class="text-slate-400 text-sm font-bold uppercase">Soap Level</h2></div>
+                    <div id="soap-badge" class="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full text-xs font-bold border border-purple-500/30">OK</div>
+                </div>
+                <div class="flex items-end gap-2 mb-2"><span id="soap-val-display" class="text-5xl font-mono font-bold text-white">65</span><span class="text-slate-500 font-bold mb-2">%</span></div>
+                <div class="h-4 w-full bg-slate-700 rounded-full overflow-hidden"><div id="soap-bar" class="h-full bg-purple-500 transition-width w-[65%]"></div></div>
+            </div>
+        </div>
+
+        <div class="max-w-6xl mx-auto mt-8 p-4 bg-black/40 rounded-xl border border-slate-700">
+            <h3 class="text-xs font-bold text-slate-400 uppercase mb-2">Calculated Output (Sent to Dashboard)</h3>
+            <div class="flex gap-8 text-sm">
+                <p>Calculated Score: <span id="calc-score" class="font-mono text-yellow-400 font-bold">9.0</span>/10</p>
+                <p>Status: <span id="calc-status" class="font-mono text-green-400 font-bold">Clean</span></p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-slate-800 border-t border-slate-700 p-6">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+                <div class="flex justify-between text-xs mb-2 text-slate-400"><span>Gas PPM (High = Bad)</span></div>
+                <input type="range" min="0" max="500" value="45" class="w-full h-2 bg-slate-600 rounded-lg cursor-pointer accent-red-500" oninput="updateValues('gas', this.value)">
+            </div>
+            <div>
+                <div class="flex justify-between text-xs mb-2 text-slate-400"><span>Water Level</span></div>
+                <input type="range" min="0" max="100" value="80" class="w-full h-2 bg-slate-600 rounded-lg cursor-pointer accent-blue-500" oninput="updateValues('water', this.value)">
+            </div>
+            <div>
+                <div class="flex justify-between text-xs mb-2 text-slate-400"><span>Soap Level</span></div>
+                <input type="range" min="0" max="100" value="65" class="w-full h-2 bg-slate-600 rounded-lg cursor-pointer accent-purple-500" oninput="updateValues('soap', this.value)">
+            </div>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyBLHApLSCSh83yidsLXxg54qLZvqns3JSM",
+          authDomain: "fir-629b8.firebaseapp.com",
+          projectId: "fir-629b8",
+          storageBucket: "fir-629b8.firebasestorage.app",
+          messagingSenderId: "672529740834",
+          appId: "1:672529740834:web:18f4721a0d4e952a50c67b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        lucide.createIcons();
+
+        let currentId = null;
+        let sensorData = { gas: 45, water: 80, soap: 65 };
+
+        window.connectESP = async () => {
+            const id = document.getElementById('target-id').value;
+            if(!id) return alert("Enter ID!");
+            
+            // Check if exists
+            const docRef = doc(db, "toilets", id);
+            const docSnap = await getDoc(docRef);
+            
+            if(docSnap.exists()) {
+                currentId = id;
+                document.getElementById('conn-status').className = "w-2 h-2 rounded-full bg-green-500 animate-ping";
+                document.getElementById('conn-text').innerText = "CONNECTED";
+                document.getElementById('conn-text').className = "text-green-400";
+                calculateAndSync(); // Initial Sync
+            } else {
+                alert("Invalid Toilet ID");
+            }
+        }
+
+        window.updateValues = (type, val) => {
+            sensorData[type] = parseInt(val);
+            
+            // Update UI
+            if(type === 'gas') {
+                document.getElementById('gas-val-display').innerText = val;
+                document.getElementById('gas-bar').style.width = Math.min((val/500)*100, 100) + "%";
+                // Color Logic
+                const badge = document.getElementById('gas-badge');
+                const bar = document.getElementById('gas-bar');
+                if(val > 200) { badge.innerText = "BAD"; badge.className="bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-xs font-bold border border-red-500/30"; bar.className="h-full bg-red-500 transition-width"; }
+                else { badge.innerText = "FRESH"; badge.className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-500/30"; bar.className="h-full bg-green-500 transition-width"; }
+            }
+            if(type === 'water') {
+                document.getElementById('water-val-display').innerText = val;
+                document.getElementById('water-visual').style.height = val + "%";
+                const badge = document.getElementById('water-badge');
+                if(val < 20) { badge.innerText = "EMPTY"; badge.className="bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-xs font-bold border border-red-500/30"; }
+                else { badge.innerText = "FULL"; badge.className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-xs font-bold border border-blue-500/30"; }
+            }
+            if(type === 'soap') {
+                document.getElementById('soap-val-display').innerText = val;
+                document.getElementById('soap-bar').style.width = val + "%";
+            }
+
+            calculateAndSync();
+        }
+
+        function calculateAndSync() {
+            if(!currentId) return;
+
+            // --- THE BRAIN: CALCULATE CONDITION ---
+            let score = 10.0;
+            let status = "clean";
+
+            // 1. Gas Penalty (Max -4)
+            if(sensorData.gas > 300) score -= 4;
+            else if(sensorData.gas > 150) score -= 2;
+
+            // 2. Water Penalty (Max -3)
+            if(sensorData.water < 10) score -= 4; // Critical
+            else if(sensorData.water < 30) score -= 2;
+
+            // 3. Soap Penalty (Max -2)
+            if(sensorData.soap < 10) score -= 1;
+
+            if(score < 0) score = 0;
+            
+            // Determine Status Text
+            if(score < 5) status = "severe";
+            else if(score < 8) status = "warning";
+            else status = "clean";
+
+            // Update UI Monitor
+            document.getElementById('calc-score').innerText = score.toFixed(1);
+            document.getElementById('calc-status').innerText = status.toUpperCase();
+
+            // SEND TO FIREBASE
+            updateDoc(doc(db, "toilets", currentId), {
+                gasLevel: sensorData.gas,
+                waterLevel: sensorData.water,
+                soapLevel: sensorData.soap,
+                severity: score.toFixed(1),
+                status: status
+            });
+        }
+    </script>
+</body>
+</html>
