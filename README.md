@@ -6,15 +6,13 @@
 
 **The ioT Hygiene Ecosystem** is the one of the smartest method which build up the **public trusts in toilets** using **IoT sensors, real-time hygiene scoring, and automated sanitation actions  we can detect the overall severity with helps public to trust the Public toilets**.  
 
-The project targets **urban, rural, and the private and public toilets** under India's **Swach Bharat Mission (SBM)** which was introduced by our country Prime Minister, Narendra Modi .
+The project targets **urban, rural, and the private and public toilets** under India's **Swach Bharat Mission (SBM)** which was introduced by our country Prime Minister, Narendra Modi . 
 
-## Important Update(Hardware Code).
-The code insure that the sensors are properly connected to the module and providing us the data as required by the AI model to be trained and reply with the proper information.
-## Important Update(Hardware Code 2.0).
-The code insure that the nodes will be connected to the other nodes if wifi range is not applicable there . if there is certain problem with he wifi the nodes automatically chnages the wifi path like an network topology.
 
 **Theme:** Smart Cities | IoT | AI | Public Health | Digital India 
 =======
+
+
 **Complete toilet hygiene management system**:
 - **Real-time Hygiene Monitoring**: Tracks the overall hygiene for the every 5 minutes .
 - **AI-Powered Prediction**: Can predict the overall condition with the help of Iot Devices.
@@ -46,6 +44,43 @@ We convert a public toilet into a **"Living Smart service"** that:
 - Makes sure the toilet is clean and free to use **pre-entry validation** 
 
 --- 
+## Data flow of the Architecture.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/nowordsyours/Hackathon/3566f24baf4299579ce7c4b926254a3b0bb8cdd9/Untitled%20diagram-2025-12-25-175115.png" alt="Smart Toilet System Flowchart" width="800">
+</p>
+
+> **Figure:** The DFD shows the architecture of the overall idea which shows IoT data acess , AI automation and automation layers.
+## Dummy Esp32 Architecture(with sensors integeration)
+
+<img width="700" height="700" alt="image" src="https://github.com/user-attachments/assets/7bce0307-7bd4-4c4f-872c-8066e840ac89" />
+
+
+## Round-1(Model Data images)
+
+<img width="700" height="700" alt="confusion_matrix" src="https://github.com/user-attachments/assets/eaf4403c-6cb6-4f78-b354-14e577e385a9" /></br>
+> **Figure:** The confusion matrix (random forest).
+<img width="700" height="700" alt="feature_importance" src="https://github.com/user-attachments/assets/0365eb34-edc6-4b03-84d6-baf66983cefa" />
+<img width="700" height="700" alt="image" src="https://github.com/user-attachments/assets/394dbab7-b6ef-4a32-853f-f697bdb87c71" />
+<img width="700" height="700" alt="image" src="https://github.com/user-attachments/assets/cdb98932-314b-45f0-b743-811eb5c14ad0" />
+<img width="700" height="700" alt="image" src="https://github.com/user-attachments/assets/17c72425-dd77-4d74-90b9-ac930ae4d86e" />
+
+## Round-2(Esp32 virtual focused,Networking issues solved).
+
+## Important Update(Hardware Code).
+The code insure that the sensors are properly connected to the module and providing us the data as required by the AI model to be trained and reply with the proper information.
+## Important Update(Hardware Code 2.0).
+The code insure that the nodes will be connected to the other nodes if wifi range is not applicable there . if there is certain problem with he wifi the nodes automatically chnages the wifi path like an network topology.
+
+<center/>Important update :- AI model Performace increase by 30%.</br>
+
+ ## Images .
+<img width="700" height="700" alt="image" src="https://github.com/user-attachments/assets/a4b1b683-d3df-4b42-a835-6497e37be593" />
+<img width="700" height="700" alt="image" src="https://github.com/user-attachments/assets/11e2a219-5a10-4adb-a50b-14c4c10b6f65" />
+<img width="700" height="700" alt="image" src="https://github.com/user-attachments/assets/8058f988-3b37-4826-bd8a-c8a1e4758ee0" />
+<img width="700" height="700" alt="image" src="https://github.com/user-attachments/assets/ba9e548d-f058-4793-9d4f-3971709fe79e" />
+<img width="700" height="700" alt="image" src="https://github.com/user-attachments/assets/10735d03-fcf1-46a2-8736-15728404c6c6" />
+
 
 ## Key Features 
 
@@ -155,21 +190,8 @@ We conducted a **10-point survey** to identify what users fears of :
 ![circuit_1](https://github.com/user-attachments/assets/dbb47e46-4fa0-4454-a762-98846cdd59a7)
 ![gas_graph](https://github.com/user-attachments/assets/6dfb0622-7819-471a-bab9-fd66bdccfd88)
 ![humidity](https://github.com/user-attachments/assets/85886fb6-49dc-4d38-a85f-74abf1ac69ab)
-<img width="2200" height="1765" alt="confusion_matrix" src="https://github.com/user-attachments/assets/eaf4403c-6cb6-4f78-b354-14e577e385a9" />
-<img width="2969" height="1765" alt="feature_importance" src="https://github.com/user-attachments/assets/0365eb34-edc6-4b03-84d6-baf66983cefa" />
-<img width="1888" height="923" alt="image" src="https://github.com/user-attachments/assets/394dbab7-b6ef-4a32-853f-f697bdb87c71" />
-<img width="1896" height="918" alt="image" src="https://github.com/user-attachments/assets/cdb98932-314b-45f0-b743-811eb5c14ad0" />
-<img width="1888" height="914" alt="image" src="https://github.com/user-attachments/assets/17c72425-dd77-4d74-90b9-ac930ae4d86e" />
 
-<center/><h1/>Video Demo - https://youtu.be/hI-imvyMICo
 
-## Data flow of the Architecture.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/nowordsyours/Hackathon/3566f24baf4299579ce7c4b926254a3b0bb8cdd9/Untitled%20diagram-2025-12-25-175115.png" alt="Smart Toilet System Flowchart" width="800">
-</p>
-
-> **Figure:** The DFD shows the architecture of the overall idea which shows IoT data acess , AI automation and automation layers.
 
 ##  Conclusion 
 
@@ -432,7 +454,6 @@ This project is created for hackathon and demo purposes. Feel free to use,update
    https://static.pib.gov.in/WriteReadData/specificdocs/documents/2024/sep/doc2024918396901.pdf
 
  
-
 
 
 **Team**: Trinity  - Smart Toilet Hygiene Monitoring System.
