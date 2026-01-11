@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PublicEase - Find Clean Toilets</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+    <style>
+        html { scroll-behavior: smooth; }
+        
+        /* Animations */
+        .fade-in-up { animation: fadeInUp 0.3s ease-out forwards; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Clean Map Styles */
+        .leaflet-control-attribution { display: none; } 
+        .leaflet-div-icon { background: transparent; border: none; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-800">
+
+    <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex items-center gap-2 cursor-pointer flex-shrink-0" onclick="window.scrollTo(0,0)">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="map-pin" class="h-6 w-6 text-red-600 fill-current"></i>
+                        <span class="text-2xl font-bold text-slate-900 tracking-tight">PublicEase</span>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-10">
+                    <a href="#map-section" class="text-sm font-medium text-slate-600 hover:text-slate-900 transition">Live Map</a>
+                    <a href="#features" class="text-sm font-medium text-slate-600 hover:text-slate-900 transition">System Features</a>
+                    <a href="#join-mission" class="text-sm font-medium text-slate-600 hover:text-slate-900 transition">Mission</a>
+                    <a href="#impact" class="text-sm font-medium text-slate-600 hover:text-slate-900 transition">Impact</a>
+                </div>
+                <div class="hidden md:flex items-center gap-6">
+                    <a href="login.html" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Sign In</a>
+                    
+                    <a href="signup.html" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                        Join Now
+                    </a>
+                </div>
+                <div class="md:hidden">
+                    <button id="menu-btn" class="text-slate-600 p-2">
+                        <i data-lucide="menu"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-100 p-4 space-y-4 shadow-lg">
+            <a href="#map-section" class="block text-slate-600 hover:text-blue-600 font-medium">Live Map</a>
+            <a href="#features" class="block text-slate-600 hover:text-blue-600 font-medium">Features</a>
+            <a href="#join-mission" class="block text-slate-600 hover:text-blue-600 font-medium">Mission</a>
+            <div class="pt-4 border-t border-slate-100 flex flex-col gap-3">
+                <a href="login.html" class="block text-center text-slate-600 font-medium">Sign In</a>
+                <a href="signup.html" class="w-full bg-blue-600 text-white px-5 py-3 rounded-xl font-semibold text-center block">Join Now</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="relative overflow-hidden pt-16 pb-24 bg-gradient-to-b from-blue-50 via-white to-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
+            
+            <div class="space-y-8 z-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-wide">
+                    <i data-lucide="star" class="w-3 h-3"></i> #1 Hygiene Mapping Tool
+                </div>
+                <h1 class="text-5xl md:text-6xl font-extrabold text-slate-900 leading-tight">
+                    Find <span class="text-blue-600">Clean</span> Toilets <br/> Near You.
+                </h1>
+                <p class="text-lg text-slate-600 max-w-lg leading-relaxed">
+                    Access our real-time map of public restrooms, rated for "severity" and cleanliness by users just like you. No more guessing.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 pt-2">
+                    <button onclick="document.getElementById('map-section').scrollIntoView()" class="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-200 flex items-center justify-center gap-2">
+                        <i data-lucide="navigation" class="w-5 h-5"></i> Find Now
+                    </button>
+                    <button onclick="window.addTestToilet()" class="bg-white text-slate-700 border border-slate-200 px-8 py-4 rounded-xl font-bold hover:bg-slate-50 transition flex items-center justify-center gap-2 hover:shadow-lg">
+                        <i data-lucide="plus-circle" class="w-5 h-5 text-blue-600"></i> Add Test Location
+                    </button>
+                </div>
+            </div>
+
+            <div id="map-section" class="relative z-0">
+                <div class="absolute -top-10 -right-10 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl"></div>
+                
+                <div class="relative bg-white rounded-[2rem] shadow-2xl border border-slate-100 overflow-hidden h-[500px] w-full z-10">
+                    <div id="leaflet-map" class="w-full h-full z-0 outline-none"></div>
+
+                    <div id="popup-card" class="hidden absolute bottom-6 left-6 right-6 bg-white p-5 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] border border-slate-100 fade-in-up z-[999]">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 id="popup-title" class="text-lg font-bold text-slate-900">Title Here</h3>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span id="popup-severity-badge" class="text-xs font-bold px-2 py-1 rounded-md bg-green-100 text-green-700">Severity: 1.2/5</span>
+                                    <span id="popup-reviews" class="text-xs text-slate-500 font-medium">• 124 reviews</span>
+                                </div>
+                            </div>
+                            <button onclick="closePopup()" class="bg-slate-50 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <div id="popup-features" class="flex flex-wrap gap-2 mb-4"></div>
+                        <button class="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                            <i data-lucide="navigation" class="w-4 h-4"></i> Navigate Here
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <span class="text-blue-600 font-bold tracking-wider uppercase text-sm">System Capabilities</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 mt-2">Complete Toilet Hygiene Management</h2>
+                <p class="text-slate-500 mt-4 max-w-2xl mx-auto text-lg">
+                    A comprehensive ecosystem combining IoT, AI, and staff management to ensure pristine public facilities.
+                </p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100 hover:border-blue-200 transition duration-300 group hover:shadow-lg">
+                    <div class="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-600 group-hover:scale-110 transition"><i data-lucide="timer" class="w-7 h-7"></i></div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Real-time Hygiene Monitoring</h3>
+                    <p class="text-slate-600 leading-relaxed">Tracks the overall hygiene levels every <span class="font-bold text-slate-800">5 minutes</span> using advanced smart sensors.</p>
+                </div>
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100 hover:border-purple-200 transition duration-300 group hover:shadow-lg">
+                    <div class="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center mb-6 text-purple-600 group-hover:scale-110 transition"><i data-lucide="sparkles" class="w-7 h-7"></i></div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">AI-Powered Prediction</h3>
+                    <p class="text-slate-600 leading-relaxed">Leverages IoT devices and machine learning to predict facility conditions before they deteriorate.</p>
+                </div>
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100 hover:border-green-200 transition duration-300 group hover:shadow-lg">
+                    <div class="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-6 text-green-600 group-hover:scale-110 transition"><i data-lucide="users-round" class="w-7 h-7"></i></div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Automated Staff Management</h3>
+                    <p class="text-slate-600 leading-relaxed">Smart algorithm assigns cleaners to specific locations automatically based on real-time hygiene data.</p>
+                </div>
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100 hover:border-orange-200 transition duration-300 group hover:shadow-lg">
+                    <div class="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mb-6 text-orange-600 group-hover:scale-110 transition"><i data-lucide="map" class="w-7 h-7"></i></div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Public User Experience</h3>
+                    <p class="text-slate-600 leading-relaxed">Interactive maps, real-time facility information, and severity ratings provide a seamless experience.</p>
+                </div>
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100 hover:border-cyan-200 transition duration-300 group hover:shadow-lg md:col-span-2 lg:col-span-2">
+                    <div class="w-14 h-14 bg-cyan-100 rounded-2xl flex items-center justify-center mb-6 text-cyan-600 group-hover:scale-110 transition"><i data-lucide="layout-dashboard" class="w-7 h-7"></i></div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Multi-stakeholder Dashboards</h3>
+                    <p class="text-slate-600 leading-relaxed">Separate, dedicated interfaces for public users, cleaning staff, and administrators. Admins get a bird's-eye view, staff get task lists, and users get live maps.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="join-mission" class="py-24 bg-slate-50 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-16 items-center mb-24">
+                <div class="space-y-8">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-wide">
+                        <i data-lucide="heart-handshake" class="w-3 h-3"></i> Community Driven
+                    </div>
+                    <h2 class="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight">
+                        Map the City. <br/>
+                        <span class="text-blue-600">Protect Dignity.</span>
+                    </h2>
+                    <p class="text-lg text-slate-600 leading-relaxed">
+                        Access to clean sanitation is a basic human right, yet finding a safe restroom is a daily struggle for millions. 
+                        <strong>PublicEase</strong> is changing that. We are on a mission to map every safe, hygienic restroom in the city.
+                    </p>
+                    <ul class="space-y-4 mt-4">
+                        <li class="flex items-start gap-3">
+                            <div class="bg-green-100 p-1 rounded-full mt-1"><i data-lucide="check" class="w-4 h-4 text-green-600"></i></div>
+                            <span class="text-slate-700"><strong>Verify Hygiene:</strong> Report on soap availability, water supply, and cleanliness.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <div class="bg-green-100 p-1 rounded-full mt-1"><i data-lucide="check" class="w-4 h-4 text-green-600"></i></div>
+                            <span class="text-slate-700"><strong>Check Safety:</strong> Confirm adequate lighting, working locks, and safe locations.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <div class="bg-green-100 p-1 rounded-full mt-1"><i data-lucide="check" class="w-4 h-4 text-green-600"></i></div>
+                            <span class="text-slate-700"><strong>Map Accessibility:</strong> Identify ramps and facilities for the elderly and disabled.</span>
+                        </li>
+                    </ul>
+                    <a href="signup.html" class="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-200 mt-6">
+                        <i data-lucide="user-plus" class="w-5 h-5"></i> Join as a Scout
+                    </a>
+                </div>
+                
+                <div class="relative">
+                    <div class="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white h-[500px]">
+                        <img src="https://images.unsplash.com/photo-1574950578143-858c6fc58922?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Community Volunteer" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    </div>
+                    <div class="absolute -bottom-8 -left-8 bg-white p-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100 max-w-xs z-10">
+                        <div class="flex gap-1 text-yellow-400 mb-2">
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                            <i data-lucide="star" class="w-4 h-4 fill-current"></i>
+                        </div>
+                        <p class="text-slate-800 font-medium text-sm leading-relaxed mb-4 italic">
+                            "I travel for sales daily. Marking clean restrooms on my route helps me, but knowing it helps women and seniors feel safe is the real reward."
+                        </p>
+                        <div class="flex items-center gap-3">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" class="w-10 h-10 rounded-full border-2 border-white shadow-sm" alt="User">
+                            <div>
+                                <div class="text-sm font-bold text-slate-900">Vikram Singh</div>
+                                <div class="text-xs text-slate-500">Gold Contributor • Mumbai</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-10">
+                <div class="text-center space-y-4 p-6 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 rounded-2xl transition duration-300">
+                    <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto text-blue-600 shadow-sm border border-slate-100"><i data-lucide="droplets" class="w-8 h-8"></i></div>
+                    <h4 class="text-xl font-bold text-slate-900">Hygiene First</h4>
+                    <p class="text-slate-600 text-sm">We don't just find toilets; we find *clean* ones. Our severity rating warns users about bad hygiene before they arrive.</p>
+                </div>
+                <div class="text-center space-y-4 p-6 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 rounded-2xl transition duration-300">
+                    <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto text-blue-600 shadow-sm border border-slate-100"><i data-lucide="accessibility" class="w-8 h-8"></i></div>
+                    <h4 class="text-xl font-bold text-slate-900">Inclusive Design</h4>
+                    <p class="text-slate-600 text-sm">Focusing on finding facilities for differently-abled people, parents with infants, and gender-neutral options.</p>
+                </div>
+                <div class="text-center space-y-4 p-6 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 rounded-2xl transition duration-300">
+                    <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto text-blue-600 shadow-sm border border-slate-100"><i data-lucide="heart-pulse" class="w-8 h-8"></i></div>
+                    <h4 class="text-xl font-bold text-slate-900">Health Safety</h4>
+                    <p class="text-slate-600 text-sm">Preventing the spread of disease by identifying sanitation hazards and alerting authorities instantly.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="impact" class="py-24 bg-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-1/2 h-full bg-blue-50/50 -skew-x-12 transform origin-top-right z-0"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-wide mb-6">
+                        <i data-lucide="trending-up" class="w-3 h-3"></i> Real Impact
+                    </div>
+                    <h2 class="text-4xl font-extrabold text-slate-900 leading-tight mb-6">
+                        Our proven track record of <span class="text-blue-600 underline decoration-4 decoration-blue-200">keeping cities clean.</span>
+                    </h2>
+                    <p class="text-lg text-slate-600 mb-10">
+                        We've earned the trust of municipalities and citizens alike. The numbers speak for themselves.
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="stats-container">
+                        <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 text-center hover:-translate-y-1 transition duration-300">
+                            <div class="text-3xl font-extrabold text-blue-600 mb-1 flex justify-center">
+                                <span class="counter" data-target="50">0</span>k+
+                            </div>
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Toilets Mapped</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 text-center hover:-translate-y-1 transition duration-300">
+                            <div class="text-3xl font-extrabold text-blue-600 mb-1 flex justify-center">
+                                <span class="counter" data-target="1.2">0</span>M+
+                            </div>
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Monthly Users</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 text-center hover:-translate-y-1 transition duration-300">
+                            <div class="text-3xl font-extrabold text-blue-600 mb-1 flex justify-center">
+                                <span class="counter" data-target="120">0</span>+
+                            </div>
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Cities Covered</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
+                        <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Happy User" class="w-full h-[500px] object-cover object-center">
+                    </div>
+                    <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center shadow-xl animate-bounce">
+                        <i data-lucide="thumbs-up" class="w-10 h-10 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-slate-900 text-slate-400 py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-4 gap-12 mb-12">
+            <div class="col-span-1 md:col-span-2">
+                <div class="flex items-center gap-2 mb-6">
+                    <div class="bg-blue-600 p-1.5 rounded-lg">
+                        <i data-lucide="map-pin" class="h-5 w-5 text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold text-white tracking-tight">PublicEase</span>
+                </div>
+                <p class="text-sm leading-relaxed mb-6 pr-8">
+                    PublicEase is a community-driven platform dedicated to improving public sanitation access. We map, rate, and monitor restrooms to ensure dignity and hygiene for everyone.
+                </p>
+                <div class="flex gap-4">
+                    <a href="#" class="text-slate-500 hover:text-white transition"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+                    <a href="#" class="text-slate-500 hover:text-white transition"><i data-lucide="facebook" class="w-5 h-5"></i></a>
+                    <a href="#" class="text-slate-500 hover:text-white transition"><i data-lucide="instagram" class="w-5 h-5"></i></a>
+                    <a href="#" class="text-slate-500 hover:text-white transition"><i data-lucide="linkedin" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-6">Product</h4>
+                <ul class="space-y-4 text-sm">
+                    <li><a href="#map-section" class="hover:text-white transition">Live Map</a></li>
+                    <li><a href="#features" class="hover:text-white transition">Features</a></li>
+                    <li><a href="#" class="hover:text-white transition">Mobile App</a></li>
+                    <li><a href="#" class="hover:text-white transition">For Businesses</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-6">Company</h4>
+                <ul class="space-y-4 text-sm">
+                    <li><a href="#join-mission" class="hover:text-white transition">Our Mission</a></li>
+                    <li><a href="#" class="hover:text-white transition">Careers</a></li>
+                    <li><a href="#" class="hover:text-white transition">Blog</a></li>
+                    <li><a href="#" class="hover:text-white transition">Contact Us</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-slate-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+            <p>© 2024 PublicEase Inc. All rights reserved.</p>
+            <div class="flex gap-6">
+                <a href="#" class="hover:text-white transition">Privacy Policy</a>
+                <a href="#" class="hover:text-white transition">Terms of Service</a>
+                <a href="#" class="hover:text-white transition">Cookie Policy</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <script type="module">
+        // Import Firebase Functions from CDN
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // --- YOUR FIREBASE CONFIG (fir-629b8) ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyBLHApLSCSh83yidsLXxg54qLZvqns3JSM",
+          authDomain: "fir-629b8.firebaseapp.com",
+          projectId: "fir-629b8",
+          storageBucket: "fir-629b8.firebasestorage.app",
+          messagingSenderId: "672529740834",
+          appId: "1:672529740834:web:18f4721a0d4e952a50c67b"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Initialize Icons
+        lucide.createIcons();
+
+        // --- MAP LOGIC ---
+        var map = L.map('leaflet-map', {
+            zoomControl: false,
+            scrollWheelZoom: false,
+            dragging: true
+        }).setView([28.6315, 77.2167], 15);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        // --- BACKEND LOGIC: Listen for toilets ---
+        const toiletsCollection = collection(db, "toilets");
+
+        // Listen for real-time updates
+        onSnapshot(toiletsCollection, (snapshot) => {
+            snapshot.docs.forEach(doc => {
+                const toilet = doc.data();
+                addPinToMap(toilet);
+            });
+        });
+
+        // Add Pin Function
+        function addPinToMap(toilet) {
+            let colorClass = 'bg-red-500';
+            let iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-white"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+            
+            if (toilet.status === 'clean') {
+                colorClass = 'bg-green-500';
+                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-white"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+            } else if (toilet.status === 'warning') {
+                colorClass = 'bg-yellow-400';
+                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-white"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+            }
+
+            const customIcon = L.divIcon({
+                className: 'custom-pin',
+                html: `
+                    <div class="relative flex items-center justify-center w-12 h-12 rounded-full shadow-lg border-4 border-white ${colorClass} hover:scale-110 transition-transform duration-200 cursor-pointer">
+                        ${iconSvg}
+                    </div>
+                `,
+                iconSize: [48, 48],
+                iconAnchor: [24, 24]
+            });
+
+            // Handle missing lat/lng gracefully
+            if(toilet.lat && toilet.lng) {
+                const marker = L.marker([toilet.lat, toilet.lng], {icon: customIcon}).addTo(map);
+                marker.on('click', () => {
+                    openPopup(toilet);
+                });
+            }
+        }
+
+        // Popup Logic
+        const popup = document.getElementById('popup-card');
+        const pTitle = document.getElementById('popup-title');
+        const pBadge = document.getElementById('popup-severity-badge');
+        const pReviews = document.getElementById('popup-reviews');
+        const pFeatures = document.getElementById('popup-features');
+
+        function openPopup(data) {
+            pTitle.innerText = data.name;
+            pReviews.innerText = `• ${data.reviews || 0} reviews`;
+            pBadge.innerText = `Severity: ${data.severity}/5`;
+
+            if (data.status === 'clean') {
+                pBadge.className = "text-xs font-bold px-2 py-1 rounded-md bg-green-100 text-green-700";
+            } else if (data.status === 'warning') {
+                pBadge.className = "text-xs font-bold px-2 py-1 rounded-md bg-yellow-100 text-yellow-700";
+            } else {
+                pBadge.className = "text-xs font-bold px-2 py-1 rounded-md bg-red-100 text-red-700";
+            }
+
+            pFeatures.innerHTML = '';
+            if(data.features) {
+                data.features.forEach(feat => {
+                    const span = document.createElement('span');
+                    span.className = "text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded border border-slate-200 font-medium";
+                    span.innerText = feat;
+                    pFeatures.appendChild(span);
+                });
+            }
+            popup.classList.remove('hidden');
+            map.flyTo([data.lat, data.lng], 16);
+        }
+
+        window.closePopup = function() {
+            popup.classList.add('hidden');
+        }
+
+        // --- TEST FUNCTION: Add Random Location to Database ---
+        window.addTestToilet = async function() {
+            try {
+                // Generate a RANDOM tick/location near the center of the map
+                const lat = 28.63 + (Math.random() * 0.02 - 0.01);
+                const lng = 77.21 + (Math.random() * 0.02 - 0.01);
+                
+                // Add to Database (This works like a real backend update)
+                await addDoc(collection(db, "toilets"), {
+                    name: "New Public Washroom",
+                    status: Math.random() > 0.5 ? "clean" : "warning", // Random status
+                    severity: (Math.random() * 5).toFixed(1),
+                    reviews: Math.floor(Math.random() * 50),
+                    features: ["Free", "Water Available"],
+                    lat: lat,
+                    lng: lng
+                });
+                console.log("Random tick added to map!");
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                alert("Please check Firebase Permissions! Error: " + e.message);
+            }
+        }
+
+        // Mobile Menu
+        document.getElementById('menu-btn').onclick = () => {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        };
+
+        // Stats Animation
+        function animateCounter(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                let currentVal = (progress * (end - start) + start);
+                
+                if (end % 1 !== 0) {
+                     obj.innerHTML = currentVal.toFixed(1);
+                } else {
+                     obj.innerHTML = Math.floor(currentVal);
+                }
+
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                     obj.innerHTML = end; 
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    const counters = entry.target.querySelectorAll('.counter');
+                    counters.forEach(counter => {
+                        const target = parseFloat(counter.getAttribute('data-target'));
+                        animateCounter(counter, 0, target, 2000); 
+                    });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        const statsContainer = document.getElementById('stats-container');
+        if(statsContainer) observer.observe(statsContainer);
+
+    </script>
+</body>
+</html>
